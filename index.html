@@ -1,8 +1,8 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Dynamic Prompt Generator</title>
   <style>
     /* Design Tokens */
@@ -50,16 +50,24 @@
     .card { background: var(--card); border-radius: var(--radius-m); box-shadow: var(--shadow-soft); padding: 22px; margin-bottom: 18px; transition: transform 200ms ease, box-shadow 200ms ease; }
     .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
     form label { display: block; margin-top: 14px; margin-bottom: 6px; font-weight: 600; color: #f5f5f7; }
-    input, select { width: 100%; padding: 14px; min-height: 48px; border-radius: 14px; border: 1px solid var(--hairline); background: #1f1f21; color: #f5f5f7; transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease; }
-    input::placeholder { color: var(--muted); }
+    input, select, textarea {
+      width: 100%; padding: 14px; min-height: 48px; border-radius: 14px; border: 1px solid var(--hairline);
+      background: #1f1f21; color: #f5f5f7; transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease;
+    }
+    input::placeholder, textarea::placeholder { color: var(--muted); }
     select { appearance: none; }
-    input:focus-visible, select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
+    input:focus-visible, select:focus-visible, textarea:focus-visible {
+      outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring);
+    }
     .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
     .col-6 { grid-column: span 6; }
     .col-4 { grid-column: span 4; }
     .col-12 { grid-column: span 12; }
     .actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
-    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: var(--radius-pill); border: none; cursor: pointer; font-weight: 600; transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, color 200ms ease; }
+    .btn {
+      display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: var(--radius-pill);
+      border: none; cursor: pointer; font-weight: 600; transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, color 200ms ease;
+    }
     .btn-primary { background: linear-gradient(180deg, #0a84ff 0%, #0071e3 100%); color: #fff; box-shadow: 0 6px 16px rgba(10,132,255,0.35), 0 2px 6px rgba(10,132,255,0.25) inset; }
     .btn-primary:hover { box-shadow: 0 8px 20px rgba(10,132,255,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset; }
     .btn-primary:active { transform: translateY(1px); box-shadow: 0 4px 12px rgba(10,132,255,0.35), 0 0 0 2px rgba(255,255,255,0.08) inset; }
@@ -67,7 +75,7 @@
     .btn-secondary:hover { background: rgba(255,255,255,0.06); }
     .btn-secondary:active { transform: translateY(1px); }
     .output { white-space: pre-wrap; line-height: 1.6; min-height: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 13.5px; color: #f5f5f7; }
-    .output-box { background: linear-gradient(180deg, #2a2a2c 0%, #1f1f21 100%); border: 1px solid var(--hairline); border-radius: var(--radius-l); padding: 18px; }
+    .output-box { background: linear-gradient(180deg, #2a2a2c 0%, #1f1f21 100%); border: 1px solid var(--hairline); border-radius: var(--radius-l); padding: 18px; max-height: 50vh; overflow-y: auto; }
     .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
     .history li { background: #232326; border: 1px solid var(--hairline); border-radius: var(--radius-m); padding: 12px; transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease; }
     .history li:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
@@ -78,6 +86,11 @@
     /* Microinteractions */
     .fade-in { animation: fadeIn 320ms ease forwards; }
     @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+    /* Copy pulse feedback */
+    .pulse { animation: pulseCopy 360ms ease; }
+    @keyframes pulseCopy { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+    /* Character counter style */
+    .char-counter { margin-top: 6px; font-size: 12px; color: var(--muted); text-align: right; }
   </style>
 </head>
 <body>
@@ -93,8 +106,8 @@
       <p class="subtitle">Create consulting-grade prompts with rich details.</p>
       <p class="caption">Build robust instructions for AI outputs with one form.</p>
       <div class="hero-actions">
-        <button type="button" class="btn btn-primary" id="heroGenerateCta">Generate Prompt</button>
-        <button type="button" class="btn btn-secondary" id="heroCopyCta">Copy Prompt</button>
+        <button type="button" class="btn btn-primary" id="heroGenerateCta" aria-label="Generate Prompt">Generate Prompt</button>
+        <button type="button" class="btn btn-secondary" id="heroCopyCta" aria-label="Copy Prompt">Copy Prompt</button>
       </div>
     </header>
 
@@ -102,7 +115,8 @@
       <form id="promptForm" class="card">
         <div class="field">
           <label for="goal">Objective</label>
-          <input id="goal" type="text" name="goal" placeholder="Ex: Summarize a PDF on the economy">
+          <input id="goal" type="text" name="goal" maxlength="300" placeholder="Ex: Align 2026 strategy and KPIs for CEO slide review"/>
+          <div id="goalCounter" class="char-counter" aria-live="polite">0/300</div>
         </div>
 
         <div class="row">
@@ -117,9 +131,10 @@
           <div class="field col-6">
             <label for="tone">Tone</label>
             <select id="tone" name="tone">
-              <option value="formal">Formal</option>
-              <option value="informal">Informal</option>
-              <option value="creative">Creative</option>
+              <option value="Formal & Executive">Formal & Executive</option>
+              <option value="Concise & Analytical">Concise & Analytical</option>
+              <option value="Visionary & Inspiring">Visionary & Inspiring</option>
+              <option value="Persuasive & Client-Oriented">Persuasive & Client-Oriented</option>
             </select>
           </div>
         </div>
@@ -128,23 +143,23 @@
           <div class="field col-6">
             <label for="language">Output language</label>
             <select id="language" name="language">
+              <option value="English" selected>English</option>
               <option value="Italian">Italian</option>
-              <option value="English">English</option>
             </select>
           </div>
           <div class="field col-6">
             <label for="style">Writing style</label>
             <select id="style" name="style">
-              <option value="professional">Professional</option>
-              <option value="academic">Academic</option>
-              <option value="friendly">Friendly</option>
-              <option value="creative">Creative</option>
+              <option value="Professional">Professional</option>
+              <option value="Executive">Executive</option>
+              <option value="Data-driven">Data-driven</option>
+              <option value="Storytelling">Storytelling</option>
             </select>
           </div>
         </div>
 
         <div class="row">
-          <div class="field col-4">
+          <div class="field col-6">
             <label for="length">Expected length</label>
             <select id="length" name="length">
               <option value="short">Short</option>
@@ -152,24 +167,29 @@
               <option value="long">Long</option>
             </select>
           </div>
-          <div class="field col-4">
+          <div class="field col-6">
             <label for="format">Output format</label>
             <select id="format" name="format">
-              <option value="list">List</option>
               <option value="paragraph">Paragraph</option>
-              <option value="email">Email</option>
+              <option value="list">List</option>
+              <option value="hybrid">Hybrid (paragraph + bullets)</option>
             </select>
           </div>
-          <div class="field col-4">
+        </div>
+
+        <div class="row">
+          <div class="field col-6">
             <label for="category">Use case</label>
             <select id="category" name="category">
+              <option value="slide_content" selected>Slide Content</option>
               <option value="email">Business Email</option>
-              <option value="slide_content">Slide Content</option>
-              <option value="strategic_plan">Strategic Plan</option>
-              <option value="market_analysis">Market Analysis</option>
-              <option value="executive_summary">Executive Summary</option>
-              <option value="recommendation_memo">Recommendation Memo</option>
             </select>
+          </div>
+
+          <!-- Conditional Template selector for chosen category -->
+          <div class="field col-6" id="templateWrapper" style="display:none;">
+            <label for="template">Template</label>
+            <select id="template" name="template"></select>
           </div>
         </div>
 
@@ -205,101 +225,399 @@
     const heroGenerateCta = document.getElementById("heroGenerateCta");
     const heroCopyCta = document.getElementById("heroCopyCta");
     const generateBtn = document.getElementById("generateBtn");
+    const headerEl = document.getElementById("siteHeader");
+    const templateWrapper = document.getElementById("templateWrapper");
+    const templateSelect = document.getElementById("template");
+    const categorySelect = document.getElementById("category");
     const history = [];
+    const goalInput = document.getElementById("goal");
+    const goalCounter = document.getElementById("goalCounter");
 
-    // Extended Prompt Library
-    const promptLibrary = {
-      email: `
-You are an AI assistant specialized in professional business communication. 
-Your task is to draft a {{detail}} business email in {{language}}, adopting a {{tone}} tone and a {{style}} writing style.  
+    // ===== Template options mapping (10 Slides + 10 Emails) =====
+    const slideTemplateOptions = [
+      { value: "strategy", label: "Strategy Deck" },
+      { value: "boardUpdate", label: "Board Update" },
+      { value: "salesProposal", label: "Sales Proposal" },
+      { value: "kpiReview", label: "KPI Review" },
+      { value: "transformationRoadmap", label: "Transformation Roadmap" },
+      { value: "workshopSummary", label: "Workshop Summary" },
+      { value: "riskAssessment", label: "Risk Assessment" },
+      { value: "visionPitch", label: "Vision Pitch" },
+      { value: "operationalPlan", label: "Operational Plan" },
+      { value: "execSummary", label: "Executive Summary" }
+    ];
 
+    const emailTemplateOptions = [
+      { value: "followup", label: "Follow-up / Reminder" },
+      { value: "meetingRequest", label: "Meeting Request" },
+      { value: "projectUpdate", label: "Project Update" },
+      { value: "thankYou", label: "Thank You Note" },
+      { value: "ceoBriefing", label: "CEO Briefing" },
+      { value: "deadlineReminder", label: "Deadline Reminder" },
+      { value: "escalation", label: "Escalation to Management" },
+      { value: "feedbackRequest", label: "Feedback Request" },
+      { value: "investorNote", label: "Investor Communication" },
+      { value: "eventInvite", label: "Event Invitation" }
+    ];
+
+    function populateTemplateOptions() {
+      const category = categorySelect.value;
+      templateSelect.innerHTML = "";
+      const options = category === "slide_content" ? slideTemplateOptions : emailTemplateOptions;
+      options.forEach(opt => {
+        const o = document.createElement("option");
+        o.value = opt.value; o.textContent = opt.label;
+        templateSelect.appendChild(o);
+      });
+      templateSelect.selectedIndex = 0; // reset selection to avoid mismatch after category change
+      templateWrapper.style.display = "block";
+    }
+
+    // ===== Prompt Libraries (rich, consulting-grade) =====
+    const slideTemplates = {
+      strategy: `
+You are a strategy consultant preparing content for client-facing slides.
+Write {{detail}} text in {{language}} to be used as slide content, adopting a {{tone}} tone and a {{style}} writing style.
+
+Deck type: Strategy Deck for senior leadership.
 Guidelines:
-- Keep the email {{length}} in length, concise but impactful.  
-- Structure it with a clear subject line, a professional opening, a logically organized body, and a respectful closing.  
-- Ensure clarity, logical flow, and consulting-grade language.  
-- Tailor the message to a senior executive audience, ensuring the tone is confident yet polite.  
+- Storyline: Situation → Complication → Recommendation (SCR). Keep each section crisp.
+- Executive Summary (1 slide): 3 headline options that synthesize value and direction.
+- Market Context: trends, competitive dynamics, and benchmarks (1–2 slides).
+- Internal Performance: financial/operational KPIs vs. targets; highlight gaps (1–2 slides).
+- Complications: 3–5 bullets with evidence; link to impact on margin/growth.
+- Strategic Moves: prioritize 4–6 initiatives (impact vs. feasibility), each with owner and timeline.
+- Financial Implications: high-level view of investment, payback, and sensitivity.
+- Risks & Mitigations: top 3 risks with concrete countermeasures.
+- Next Steps: 30/60/90-day plan and steering cadence.
+- Visuals: charts for KPIs, icons for initiatives, small data tables for assumptions.
+- Output format: {{format}}; keep slides scannable with short sentences; avoid jargon.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`,
+      boardUpdate: `
+You are a strategy consultant preparing a board update deck.
+Write {{detail}} text in {{language}}, with a {{tone}} tone and {{style}} style.
 
-      slide_content: `
-You are a strategy consultant preparing content for client-facing slides.  
-Write {{detail}} text in {{language}} to be used as slide content, adopting a {{tone}} tone and a {{style}} writing style.  
-
+Deck type: Board Update (quarterly).
 Guidelines:
-- Output should be {{length}} in length, structured in {{format}} format.  
-- Content must be concise, executive-ready, and visually scannable (short sentences, bullet points if applicable).  
-- Use strong headlines, clear sub-bullets, and emphasize insights rather than raw data.  
-- Ensure the flow follows a typical consulting storyline (situation → complication → recommendation).  
+- Cover + Agenda (1 slide).
+- KPI Dashboard: revenue, CM, pipeline, delivery, people metrics (1–2 slides). Include variances and drivers.
+- Strategic Initiatives: progress vs. plan, RAG status, key decisions pending.
+- Risk Log: top risks, likelihood/impact, mitigations, owner.
+- Outlook & Scenarios: base/upside/downside with 2–3 assumptions each.
+- Decisions Required: specify asks, trade-offs, and timelines.
+- Appendices: detailed charts/tables as backup.
+- Visuals: concise charts, infographics for RAG; avoid clutter.
+- Output format: {{format}}; ensure executive-ready headlines and sub-bullets.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`,
+      salesProposal: `
+You are a strategy consultant drafting a sales proposal deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
 
-      strategic_plan: `
-You are acting as a senior management consultant.  
-Develop a {{detail}} strategic plan in {{language}}, using a {{tone}} tone and a {{style}} writing style.  
-
+Deck type: Client Sales Proposal.
 Guidelines:
-- Plan should be {{length}}, structured in {{format}} format, with a clear beginning, middle, and end.  
-- Always include: context/background, diagnosis of the situation, proposed initiatives, roadmap with milestones, and KPIs for tracking success.  
-- Ensure the plan highlights key priorities, actionable steps, and provides a clear roadmap aligned with executive expectations.  
-- Where relevant, propose multiple scenarios (base, upside, downside) and outline associated risks.  
+- Opening: client situation and pain points (quantified where possible).
+- Our Solution: architecture, process, and governance; clarify what’s in/out of scope.
+- Value Proposition: 3–5 quantified benefits; include before/after metrics.
+- Proof Points: 2–3 relevant case studies with outcomes.
+- Commercials: pricing options, assumptions, and timeline.
+- Risks & Dependencies: what we need from the client to succeed.
+- Call-to-Action: pilot scope, start date options, decision checkpoints.
+- Visuals: icons + simple diagrams; charts for value/ROI.
+- Output format: {{format}}; persuasive, client-centric language.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`,
+      kpiReview: `
+You are a consultant preparing a KPI review deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
 
-      market_analysis: `
-You are a business analyst conducting a {{detail}} market analysis in {{language}}.  
-Adopt a {{tone}} tone and a {{style}} writing style.  
-
+Deck type: KPI Review.
 Guidelines:
-- Output should be {{length}}, structured in {{format}} format.  
-- Always include: market size and growth trends, key players and competitive landscape, consumer behavior insights, regulatory aspects, and forward-looking implications.  
-- Leverage online insights (e.g., Perplexity or similar sources) to enrich the analysis with data-driven facts.  
-- Ensure the analysis is logically structured and tailored for an executive audience.  
-- Close with a set of 2–3 key recommendations derived from the analysis.  
+- Executive Dashboard: 6–8 KPIs with trend lines and targets.
+- Variance Analysis: top positive/negative deltas; root causes.
+- Thematic Deep Dives: max 3 areas (e.g., sales conversion, delivery efficiency).
+- Actions: corrective measures with owners, due dates, expected impact.
+- Forward View: next-month/quarter forecast with confidence range.
+- Visuals: clean charts, heatmaps for variances; keep labels minimal.
+- Output format: {{format}}; crisp headlines; avoid raw dumps.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`,
+      transformationRoadmap: `
+You are a consultant designing a transformation roadmap deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
 
-      executive_summary: `
-You are a consultant preparing an executive summary for senior leadership.  
-Produce a {{detail}} summary in {{language}}, {{length}} in length, adopting a {{tone}} tone and {{style}} writing style.  
-
+Deck type: Transformation Roadmap.
 Guidelines:
-- Structure: 1) Purpose, 2) Key findings, 3) Implications, 4) Recommendations.  
-- Focus only on the most critical insights; avoid operational details.  
-- Ensure the output is concise, scannable, and ready for inclusion in a board-level document.  
+- Current State: capability gaps; baseline KPIs.
+- Vision & Targets: where we need to be in 12–24 months.
+- Workstreams: 4–6 streams with outcomes and key activities.
+- Timeline: phased plan with key milestones (Gantt-like).
+- Enablers: technology, operating model, talent, change management.
+- Risks & Comms: stakeholder mapping; communication cadence.
+- Benefits: value bridge (baseline → improvements → target).
+- Visuals: roadmap charts; icons for workstreams; include simple RACI.
+- Output format: {{format}}.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`,
+      workshopSummary: `
+You are a consultant summarizing a workshop for stakeholders.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
 
-      recommendation_memo: `
-You are preparing a consulting-style recommendation memo.  
-Write a {{detail}} memo in {{language}}, {{length}} in length, adopting a {{tone}} tone and {{style}} writing style.  
-
+Deck type: Workshop Summary.
 Guidelines:
-- Memo must include: executive summary, key analysis points, recommendation, expected impact, and next steps.  
-- Use a professional and persuasive style, backed by logical reasoning.  
-- Ensure the document is structured in a way that convinces a C-level audience.  
+- Agenda & Participants.
+- Key Insights: top 5 takeaways with direct quotes if useful.
+- Breakout Outputs: consolidated themes; areas of consensus/divergence.
+- Decisions & Actions: who, what, by when; dependencies.
+- Open Questions: items needing follow-up.
+- Next Steps: plan for validation and execution.
+- Visuals: minimal icons, sticky-note style summaries; keep clean.
+- Output format: {{format}}; concise, action-oriented.
+Objective to address: "{{goal}}".
+      `.trim(),
 
-Objective to address: "{{goal}}".  
-`
+      riskAssessment: `
+You are a consultant producing a risk assessment deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
+
+Deck type: Risk Assessment.
+Guidelines:
+- Risk Overview: risk taxonomy and scope.
+- Heatmap: likelihood vs. impact with color coding.
+- Top Risks (3–5): description, early indicators, triggers.
+- Mitigations: concrete actions, owners, timelines, residual risk.
+- Scenarios: stress test outcomes and thresholds.
+- Governance: escalation paths and review cadence.
+- Visuals: heatmap, simple tables.
+- Output format: {{format}}; clear, authoritative language.
+Objective to address: "{{goal}}".
+      `.trim(),
+
+      visionPitch: `
+You are a consultant crafting a visionary pitch deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
+
+Deck type: Vision Pitch.
+Guidelines:
+- North Star: bold, memorable vision statement (3 headline options).
+- Opportunity: market trends, unmet needs, timing.
+- Differentiation: why us; unique assets and capabilities.
+- Roadmap: phases with signature initiatives.
+- Impact: qualitative narrative + quantified upside.
+- Ask: leadership sponsorship and key decisions.
+- Visuals: storytelling imagery, minimalistic charts.
+- Output format: {{format}}; inspiring but grounded.
+Objective to address: "{{goal}}".
+      `.trim(),
+
+      operationalPlan: `
+You are a consultant preparing an operational plan deck.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
+
+Deck type: Operational Plan.
+Guidelines:
+- Objectives & Targets for the year/quarter.
+- Initiatives by function/stream with owners and KPIs.
+- Resource Plan: capacity, skills, constraints.
+- Process & SLAs: key handoffs and guardrails.
+- Monitoring: cadences, dashboards, and thresholds for action.
+- Risks & Contingencies.
+- Visuals: tables for plans; charts for throughput and SLA adherence.
+- Output format: {{format}}.
+Objective to address: "{{goal}}".
+      `.trim(),
+
+      execSummary: `
+You are a consultant writing an executive summary pack.
+Write {{detail}} text in {{language}}, {{tone}} tone, {{style}} style.
+
+Deck type: Executive Summary (board-ready).
+Guidelines:
+- Purpose: why this matters now (2–3 bullets).
+- Key Findings: 4–6 crisp, evidence-backed insights.
+- Implications: what it means; trade-offs.
+- Recommendations: prioritized actions and timelines.
+- Appendix Pointers: where to find the detail.
+- Visuals: headline cards, small charts.
+- Output format: {{format}}; short sentences; no jargon.
+Objective to address: "{{goal}}".
+      `.trim()
+    };
+
+    const emailTemplates = {
+      followup: `
+You are an AI assistant specialized in professional business communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Follow-up / Reminder to {{recipient}}.
+Guidelines:
+- Subject: provide 3 options (clarity + relevance).
+- Opening: polite reference to prior touchpoint (date/topic).
+- Body: 2–4 concise sentences recapping objective "{{goal}}", confirming current status, and clarifying any pending items.
+- Call-to-Action: explicit ask (confirmation, date, document, approval).
+- Closing: appreciative, professional sign-off; include suggested signature.
+- Format: {{format}}; avoid jargon, keep crisp transitions.
+      `.trim(),
+
+      meetingRequest: `
+You are an AI assistant specialized in professional business communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Meeting Request to {{recipient}}.
+Guidelines:
+- Subject: 3 alternatives (include topic + proposed window).
+- Opening: purpose and expected outcome in one line.
+- Body: propose 2–3 time slots; include timezone clarity; attach/pre-read mention if relevant to "{{goal}}".
+- CTA: ask to confirm preferred slot or suggest alternatives.
+- Closing: courteous, with calendar invite note.
+- Format: {{format}}; short paragraphs; bullets allowed for slots.
+      `.trim(),
+
+      projectUpdate: `
+You are an AI assistant specialized in professional business communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Project Update to {{recipient}}.
+Guidelines:
+- Subject: 2–3 clear options (project name + status).
+- Opening: one-sentence executive summary.
+- Body: bullets for milestones achieved, upcoming deadlines, risks/issues (owner + ETA), all aligned to "{{goal}}".
+- CTA: confirm next checkpoint or feedback on specific items.
+- Closing: professional, appreciative.
+- Format: {{format}}; ensure scannability.
+      `.trim(),
+
+      thankYou: `
+You are an AI assistant specialized in professional business communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Thank You Note to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options expressing appreciation.
+- Opening: sincere thanks tied to a specific event/result.
+- Body: 1–2 short paragraphs recognizing contributions and next step connected to "{{goal}}".
+- Closing: warm but professional; offer support for follow-up.
+- Format: {{format}}.
+      `.trim(),
+
+      ceoBriefing: `
+You are an AI assistant specialized in executive communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: CEO Briefing.
+Guidelines:
+- Subject: 2–3 options (topic + decision/heads-up).
+- Opening: 1–2 lines summarizing context and intent.
+- Highlights: 3–5 bullets (numbers first, then narrative) aligned to "{{goal}}".
+- Recommendation/Decision Point: one crisp ask; note trade-offs.
+- Closing: concise, respectful; offer concise appendix/attachments.
+- Format: {{format}}; extremely scannable; avoid adjectives.
+      `.trim(),
+
+      deadlineReminder: `
+You are an AI assistant specialized in professional communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Deadline Reminder to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options (deadline + item).
+- Opening: friendly reminder referencing agreed date.
+- Body: current status; what is needed; reference to "{{goal}}".
+- CTA: confirm completion date or obstacles.
+- Closing: appreciative, cooperative tone.
+- Format: {{format}}.
+      `.trim(),
+
+      escalation: `
+You are an AI assistant specialized in professional communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Escalation to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options signaling urgency and topic.
+- Opening: concise statement of issue and impact.
+- Body: facts only—timeline, attempts to resolve, blockers; tie back to "{{goal}}".
+- Ask: specific support/decision required and by when.
+- Closing: professional; commit to updates.
+- Format: {{format}}; firm but respectful.
+      `.trim(),
+
+      feedbackRequest: `
+You are an AI assistant specialized in professional communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Feedback Request to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options inviting input (topic + date).
+- Opening: context and why feedback matters.
+- Body: 3–5 focused questions or sections; refer to "{{goal}}".
+- CTA: preferred method and deadline for responses.
+- Closing: thanks in advance; offer a quick call if helpful.
+- Format: {{format}}; bullets allowed for questions.
+      `.trim(),
+
+      investorNote: `
+You are an AI assistant specialized in investor relations.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Investor Communication to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options (quarter + highlight).
+- Opening: concise headline and context.
+- Body: KPIs, strategic progress, outlook, risks—ordered by materiality; connect to "{{goal}}".
+- CTA: propose Q&A call; attach deck/appendix.
+- Closing: formal and precise.
+- Format: {{format}}; numbers up front; no hype.
+      `.trim(),
+
+      eventInvite: `
+You are an AI assistant specialized in professional communication.
+Draft a {{length}} {{tone}} email in {{language}} with a {{style}} writing style.
+
+Template: Event Invitation to {{recipient}}.
+Guidelines:
+- Subject: 2–3 options (event + date).
+- Opening: invite purpose and value in one sentence.
+- Body: date, time, location/virtual link, agenda highlights; mention "{{goal}}".
+- CTA: registration link or RSVP.
+- Closing: courteous; note contact for questions.
+- Format: {{format}}; bullets for agenda welcome.
+      `.trim()
+    };
+
+    // ===== Combined prompt builder by category + template =====
+    const libraries = {
+      slide_content: slideTemplates,
+      email: emailTemplates
     };
 
     function fillTemplate(template, data) {
-      return template.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] || "");
+      return template.replace(/{{(.*?)}}/g, (_, key) => (data[key.trim()] ?? ""));
     }
+
+    // Initial populate for default category
+    populateTemplateOptions();
+
+    // Category change → show correct template list
+    categorySelect.addEventListener("change", populateTemplateOptions);
 
     form.addEventListener("submit", function(e) {
       e.preventDefault();
       copyMsg.textContent = "";
+
       const goalTrimmed = form.goal.value.trim();
       if (!goalTrimmed) {
         copyMsg.textContent = "Please add an objective to generate.";
-        copyMsg.style.color = "#b91c1c";
+        copyMsg.style.color = "#fca5a5";
         return;
       }
+
       generateBtn.disabled = true;
 
       const data = {
@@ -313,14 +631,31 @@ Objective to address: "{{goal}}".
         category: form.category.value
       };
 
-      const template = promptLibrary[data.category];
-      let prompt = template ? fillTemplate(template, data).trim() : `No template for "${data.category}".`;
+      const category = data.category;
+      const templateKey = templateSelect.value;
+      const lib = libraries[category] || {};
+      const template = lib[templateKey];
+
+      if (!template) {
+        const message = `No template found for "${category}" → "${templateKey}".`;
+        outputDiv.textContent = message;
+        outputDiv.classList.remove("fade-in");
+        void outputDiv.offsetWidth;
+        outputDiv.classList.add("fade-in");
+        copyBtn.disabled = true;
+        setTimeout(() => { generateBtn.disabled = false; }, 250);
+        return;
+      }
+
+      let prompt = fillTemplate(template, data).trim();
 
       outputDiv.textContent = prompt;
-      // trigger fade-in animation
+
+      // fade-in
       outputDiv.classList.remove("fade-in");
       void outputDiv.offsetWidth;
       outputDiv.classList.add("fade-in");
+
       copyBtn.disabled = !prompt;
 
       if (prompt) {
@@ -328,6 +663,7 @@ Objective to address: "{{goal}}".
         if (history.length > 5) history.length = 5;
         renderHistory();
       }
+
       setTimeout(() => { generateBtn.disabled = false; }, 250);
     });
 
@@ -337,11 +673,15 @@ Objective to address: "{{goal}}".
       try {
         await navigator.clipboard.writeText(text);
         copyMsg.textContent = "Prompt copied to clipboard.";
-        copyMsg.style.color = "#059669";
+        copyMsg.style.color = "#86efac";
+        // Pulse animation
+        copyBtn.classList.remove("pulse");
+        void copyBtn.offsetWidth;
+        copyBtn.classList.add("pulse");
         setTimeout(() => { copyMsg.textContent = ""; }, 1400);
       } catch (err) {
         copyMsg.textContent = "Unable to copy.";
-        copyMsg.style.color = "#b91c1c";
+        copyMsg.style.color = "#fca5a5";
         setTimeout(() => { copyMsg.textContent = ""; }, 1600);
       }
     });
@@ -350,14 +690,10 @@ Objective to address: "{{goal}}".
     if (heroCopyCta) heroCopyCta.addEventListener("click", () => { copyBtn.click(); });
 
     // Header translucency on scroll
-    const headerEl = document.getElementById("siteHeader");
     function updateHeaderState() {
       if (!headerEl) return;
-      if (window.scrollY > 0) {
-        headerEl.classList.add("is-scrolled");
-      } else {
-        headerEl.classList.remove("is-scrolled");
-      }
+      if (window.scrollY > 0) headerEl.classList.add("is-scrolled");
+      else headerEl.classList.remove("is-scrolled");
     }
     updateHeaderState();
     window.addEventListener("scroll", updateHeaderState, { passive: true });
@@ -371,6 +707,18 @@ Objective to address: "{{goal}}".
         li.appendChild(pre);
         historyList.appendChild(li);
       });
+    }
+
+    // Character counter update
+    function updateGoalCounter() {
+      const max = goalInput.getAttribute("maxlength") ? parseInt(goalInput.getAttribute("maxlength"), 10) : 300;
+      const len = goalInput.value.length;
+      const text = `${len}/${max}`;
+      if (goalCounter) goalCounter.textContent = text;
+    }
+    if (goalInput) {
+      updateGoalCounter();
+      goalInput.addEventListener("input", updateGoalCounter);
     }
   </script>
 </body>
