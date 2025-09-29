@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dynamic Prompt Generator</title>
+  <style>
+    /* Design Tokens */
+    :root {
+      --bg: linear-gradient(180deg, #1c1c1e 0%, #161618 100%);
+      --text: #f5f5f7;
+      --muted: #a1a1a6;
+      --card: #2c2c2e;
+      --accent: #0a84ff;
+      --accent-ring: rgba(10, 132, 255, 0.35);
+      --hairline: rgba(255,255,255,0.12);
+      --radius-s: 10px;
+      --radius-m: 14px;
+      --radius-l: 16px;
+      --radius-pill: 999px;
+      --shadow-soft: 0 20px 40px rgba(0,0,0,0.45), 0 2px 6px rgba(0,0,0,0.25);
+      --shadow-hover: 0 28px 60px rgba(0,0,0,0.55), 0 8px 18px rgba(0,0,0,0.35);
+    }
+    * { box-sizing: border-box; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      margin: 0;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: var(--bg);
+      color: var(--text);
+    }
+    .container { width: 100%; max-width: 1080px; padding: 0 20px 40px; }
+    .site-header {
+      position: sticky; top: 0; z-index: 50;
+      backdrop-filter: saturate(180%) blur(12px);
+      background: rgba(28,28,30,0.6);
+      border-bottom: 1px solid var(--hairline);
+    }
+    .site-header.is-scrolled { background: rgba(28,28,30,0.8); }
+    .nav { display: flex; align-items: center; justify-content: center; height: 56px; }
+    .product-title { font-weight: 600; letter-spacing: 0.2px; color: #f5f5f7; }
+    .header { text-align: center; margin: 48px 0 36px; }
+    .header h1 { margin: 0 0 8px 0; font-size: clamp(32px, 5vw, 46px); font-weight: 700; color: #f5f5f7; }
+    .subtitle { margin: 0 auto; max-width: 760px; font-size: clamp(15px, 2.2vw, 19px); color: var(--muted); }
+    .caption { margin-top: 8px; font-size: 13px; color: var(--muted); }
+    .hero-actions { margin-top: 18px; display: flex; gap: 12px; justify-content: center; flex-wrap: wrap; }
+    .card { background: var(--card); border-radius: var(--radius-m); box-shadow: var(--shadow-soft); padding: 22px; margin-bottom: 18px; transition: transform 200ms ease, box-shadow 200ms ease; }
+    .card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+    form label { display: block; margin-top: 14px; margin-bottom: 6px; font-weight: 600; color: #f5f5f7; }
+    input, select { width: 100%; padding: 14px; min-height: 48px; border-radius: 14px; border: 1px solid var(--hairline); background: #1f1f21; color: #f5f5f7; transition: border-color 200ms ease, box-shadow 200ms ease, background 200ms ease; }
+    input::placeholder { color: var(--muted); }
+    select { appearance: none; }
+    input:focus-visible, select:focus-visible { outline: none; border-color: var(--accent); box-shadow: 0 0 0 4px var(--accent-ring); }
+    .row { display: grid; grid-template-columns: repeat(12, 1fr); gap: 14px; }
+    .col-6 { grid-column: span 6; }
+    .col-4 { grid-column: span 4; }
+    .col-12 { grid-column: span 12; }
+    .actions { display: flex; gap: 12px; margin-top: 18px; flex-wrap: wrap; }
+    .btn { display: inline-flex; align-items: center; justify-content: center; padding: 12px 18px; border-radius: var(--radius-pill); border: none; cursor: pointer; font-weight: 600; transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease, color 200ms ease; }
+    .btn-primary { background: linear-gradient(180deg, #0a84ff 0%, #0071e3 100%); color: #fff; box-shadow: 0 6px 16px rgba(10,132,255,0.35), 0 2px 6px rgba(10,132,255,0.25) inset; }
+    .btn-primary:hover { box-shadow: 0 8px 20px rgba(10,132,255,0.45), 0 0 0 1px rgba(255,255,255,0.06) inset; }
+    .btn-primary:active { transform: translateY(1px); box-shadow: 0 4px 12px rgba(10,132,255,0.35), 0 0 0 2px rgba(255,255,255,0.08) inset; }
+    .btn-secondary { background: rgba(255,255,255,0.04); color: var(--accent); border: 1px solid var(--hairline); }
+    .btn-secondary:hover { background: rgba(255,255,255,0.06); }
+    .btn-secondary:active { transform: translateY(1px); }
+    .output { white-space: pre-wrap; line-height: 1.6; min-height: 24px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 13.5px; color: #f5f5f7; }
+    .output-box { background: linear-gradient(180deg, #2a2a2c 0%, #1f1f21 100%); border: 1px solid var(--hairline); border-radius: var(--radius-l); padding: 18px; }
+    .history { list-style: none; padding: 0; margin: 0; display: grid; gap: 10px; }
+    .history li { background: #232326; border: 1px solid var(--hairline); border-radius: var(--radius-m); padding: 12px; transition: transform 200ms ease, box-shadow 200ms ease, background 200ms ease; }
+    .history li:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); }
+    .history pre { margin: 0; white-space: pre-wrap; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Courier New", monospace; font-size: 12.5px; line-height: 1.5; color: #e5e5e7; }
+    .section-title { margin: 0 0 10px 0; color: #f5f5f7; }
+    .footer { text-align: center; font-size: 13px; color: var(--muted); margin-top: 10px; }
+
+    /* Microinteractions */
+    .fade-in { animation: fadeIn 320ms ease forwards; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(2px); } to { opacity: 1; transform: translateY(0); } }
+  </style>
+</head>
+<body>
+  <div class="site-header" id="siteHeader">
+    <div class="container nav">
+      <div class="product-title">Dynamic Prompt Generator</div>
+    </div>
+  </div>
+
+  <div class="container">
+    <header class="header">
+      <h1>Dynamic Prompt Generator</h1>
+      <p class="subtitle">Create consulting-grade prompts with rich details.</p>
+      <p class="caption">Build robust instructions for AI outputs with one form.</p>
+      <div class="hero-actions">
+        <button type="button" class="btn btn-primary" id="heroGenerateCta">Generate Prompt</button>
+        <button type="button" class="btn btn-secondary" id="heroCopyCta">Copy Prompt</button>
+      </div>
+    </header>
+
+    <main>
+      <form id="promptForm" class="card">
+        <div class="field">
+          <label for="goal">Objective</label>
+          <input id="goal" type="text" name="goal" placeholder="Ex: Summarize a PDF on the economy">
+        </div>
+
+        <div class="row">
+          <div class="field col-6">
+            <label for="detail">Detail level</label>
+            <select id="detail" name="detail">
+              <option value="brief">Brief</option>
+              <option value="medium">Medium</option>
+              <option value="in-depth">In-depth</option>
+            </select>
+          </div>
+          <div class="field col-6">
+            <label for="tone">Tone</label>
+            <select id="tone" name="tone">
+              <option value="formal">Formal</option>
+              <option value="informal">Informal</option>
+              <option value="creative">Creative</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field col-6">
+            <label for="language">Output language</label>
+            <select id="language" name="language">
+              <option value="Italian">Italian</option>
+              <option value="English">English</option>
+            </select>
+          </div>
+          <div class="field col-6">
+            <label for="style">Writing style</label>
+            <select id="style" name="style">
+              <option value="professional">Professional</option>
+              <option value="academic">Academic</option>
+              <option value="friendly">Friendly</option>
+              <option value="creative">Creative</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div class="field col-4">
+            <label for="length">Expected length</label>
+            <select id="length" name="length">
+              <option value="short">Short</option>
+              <option value="medium">Medium</option>
+              <option value="long">Long</option>
+            </select>
+          </div>
+          <div class="field col-4">
+            <label for="format">Output format</label>
+            <select id="format" name="format">
+              <option value="list">List</option>
+              <option value="paragraph">Paragraph</option>
+              <option value="email">Email</option>
+            </select>
+          </div>
+          <div class="field col-4">
+            <label for="category">Use case</label>
+            <select id="category" name="category">
+              <option value="email">Business Email</option>
+              <option value="slide_content">Slide Content</option>
+              <option value="strategic_plan">Strategic Plan</option>
+              <option value="market_analysis">Market Analysis</option>
+              <option value="executive_summary">Executive Summary</option>
+              <option value="recommendation_memo">Recommendation Memo</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit" class="btn btn-primary" id="generateBtn">Generate Prompt</button>
+        </div>
+      </form>
+
+      <section class="card">
+        <h3 class="section-title">Generated Prompt</h3>
+        <div id="output" class="output output-box"></div>
+        <div class="actions">
+          <button type="button" class="btn btn-secondary" id="copyBtn" disabled>Copy Prompt</button>
+        </div>
+        <div id="copyMsg" class="copy-msg"></div>
+      </section>
+
+      <section class="card">
+        <h3 class="section-title">History (last 5)</h3>
+        <ul id="historyList" class="history"></ul>
+      </section>
+    </main>
+
+    <footer class="footer">Created with ❤️ by Angelo</footer>
+  </div>
+
+  <script>
+    const form = document.getElementById("promptForm");
+    const outputDiv = document.getElementById("output");
+    const copyBtn = document.getElementById("copyBtn");
+    const copyMsg = document.getElementById("copyMsg");
+    const historyList = document.getElementById("historyList");
+    const heroGenerateCta = document.getElementById("heroGenerateCta");
+    const heroCopyCta = document.getElementById("heroCopyCta");
+    const generateBtn = document.getElementById("generateBtn");
+    const history = [];
+
+    // Extended Prompt Library
+    const promptLibrary = {
+      email: `
+You are an AI assistant specialized in professional business communication. 
+Your task is to draft a {{detail}} business email in {{language}}, adopting a {{tone}} tone and a {{style}} writing style.  
+
+Guidelines:
+- Keep the email {{length}} in length, concise but impactful.  
+- Structure it with a clear subject line, a professional opening, a logically organized body, and a respectful closing.  
+- Ensure clarity, logical flow, and consulting-grade language.  
+- Tailor the message to a senior executive audience, ensuring the tone is confident yet polite.  
+
+Objective to address: "{{goal}}".  
+`,
+
+      slide_content: `
+You are a strategy consultant preparing content for client-facing slides.  
+Write {{detail}} text in {{language}} to be used as slide content, adopting a {{tone}} tone and a {{style}} writing style.  
+
+Guidelines:
+- Output should be {{length}} in length, structured in {{format}} format.  
+- Content must be concise, executive-ready, and visually scannable (short sentences, bullet points if applicable).  
+- Use strong headlines, clear sub-bullets, and emphasize insights rather than raw data.  
+- Ensure the flow follows a typical consulting storyline (situation → complication → recommendation).  
+
+Objective to address: "{{goal}}".  
+`,
+
+      strategic_plan: `
+You are acting as a senior management consultant.  
+Develop a {{detail}} strategic plan in {{language}}, using a {{tone}} tone and a {{style}} writing style.  
+
+Guidelines:
+- Plan should be {{length}}, structured in {{format}} format, with a clear beginning, middle, and end.  
+- Always include: context/background, diagnosis of the situation, proposed initiatives, roadmap with milestones, and KPIs for tracking success.  
+- Ensure the plan highlights key priorities, actionable steps, and provides a clear roadmap aligned with executive expectations.  
+- Where relevant, propose multiple scenarios (base, upside, downside) and outline associated risks.  
+
+Objective to address: "{{goal}}".  
+`,
+
+      market_analysis: `
+You are a business analyst conducting a {{detail}} market analysis in {{language}}.  
+Adopt a {{tone}} tone and a {{style}} writing style.  
+
+Guidelines:
+- Output should be {{length}}, structured in {{format}} format.  
+- Always include: market size and growth trends, key players and competitive landscape, consumer behavior insights, regulatory aspects, and forward-looking implications.  
+- Leverage online insights (e.g., Perplexity or similar sources) to enrich the analysis with data-driven facts.  
+- Ensure the analysis is logically structured and tailored for an executive audience.  
+- Close with a set of 2–3 key recommendations derived from the analysis.  
+
+Objective to address: "{{goal}}".  
+`,
+
+      executive_summary: `
+You are a consultant preparing an executive summary for senior leadership.  
+Produce a {{detail}} summary in {{language}}, {{length}} in length, adopting a {{tone}} tone and {{style}} writing style.  
+
+Guidelines:
+- Structure: 1) Purpose, 2) Key findings, 3) Implications, 4) Recommendations.  
+- Focus only on the most critical insights; avoid operational details.  
+- Ensure the output is concise, scannable, and ready for inclusion in a board-level document.  
+
+Objective to address: "{{goal}}".  
+`,
+
+      recommendation_memo: `
+You are preparing a consulting-style recommendation memo.  
+Write a {{detail}} memo in {{language}}, {{length}} in length, adopting a {{tone}} tone and {{style}} writing style.  
+
+Guidelines:
+- Memo must include: executive summary, key analysis points, recommendation, expected impact, and next steps.  
+- Use a professional and persuasive style, backed by logical reasoning.  
+- Ensure the document is structured in a way that convinces a C-level audience.  
+
+Objective to address: "{{goal}}".  
+`
+    };
+
+    function fillTemplate(template, data) {
+      return template.replace(/{{(.*?)}}/g, (_, key) => data[key.trim()] || "");
+    }
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      copyMsg.textContent = "";
+      const goalTrimmed = form.goal.value.trim();
+      if (!goalTrimmed) {
+        copyMsg.textContent = "Please add an objective to generate.";
+        copyMsg.style.color = "#b91c1c";
+        return;
+      }
+      generateBtn.disabled = true;
+
+      const data = {
+        goal: goalTrimmed,
+        detail: form.detail.value,
+        tone: form.tone.value,
+        format: form.format.value,
+        language: form.language.value,
+        style: form.style.value,
+        length: form.length.value,
+        category: form.category.value
+      };
+
+      const template = promptLibrary[data.category];
+      let prompt = template ? fillTemplate(template, data).trim() : `No template for "${data.category}".`;
+
+      outputDiv.textContent = prompt;
+      // trigger fade-in animation
+      outputDiv.classList.remove("fade-in");
+      void outputDiv.offsetWidth;
+      outputDiv.classList.add("fade-in");
+      copyBtn.disabled = !prompt;
+
+      if (prompt) {
+        history.unshift(prompt);
+        if (history.length > 5) history.length = 5;
+        renderHistory();
+      }
+      setTimeout(() => { generateBtn.disabled = false; }, 250);
+    });
+
+    copyBtn.addEventListener("click", async function() {
+      const text = outputDiv.textContent.trim();
+      if (!text) return;
+      try {
+        await navigator.clipboard.writeText(text);
+        copyMsg.textContent = "Prompt copied to clipboard.";
+        copyMsg.style.color = "#059669";
+        setTimeout(() => { copyMsg.textContent = ""; }, 1400);
+      } catch (err) {
+        copyMsg.textContent = "Unable to copy.";
+        copyMsg.style.color = "#b91c1c";
+        setTimeout(() => { copyMsg.textContent = ""; }, 1600);
+      }
+    });
+
+    if (heroGenerateCta) heroGenerateCta.addEventListener("click", () => { form.requestSubmit(); });
+    if (heroCopyCta) heroCopyCta.addEventListener("click", () => { copyBtn.click(); });
+
+    // Header translucency on scroll
+    const headerEl = document.getElementById("siteHeader");
+    function updateHeaderState() {
+      if (!headerEl) return;
+      if (window.scrollY > 0) {
+        headerEl.classList.add("is-scrolled");
+      } else {
+        headerEl.classList.remove("is-scrolled");
+      }
+    }
+    updateHeaderState();
+    window.addEventListener("scroll", updateHeaderState, { passive: true });
+
+    function renderHistory() {
+      historyList.innerHTML = "";
+      history.forEach((item) => {
+        const li = document.createElement("li");
+        const pre = document.createElement("pre");
+        pre.textContent = item;
+        li.appendChild(pre);
+        historyList.appendChild(li);
+      });
+    }
+  </script>
+</body>
+</html>
